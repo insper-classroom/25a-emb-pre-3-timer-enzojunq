@@ -15,12 +15,6 @@ volatile bool flag_g = false;
 volatile bool toggle_led_flag_r = false;
 volatile bool toggle_led_flag_g = false;
 
-static repeating_timer_t timer_r;
-static repeating_timer_t timer_g;
-
-bool timer_running_r = false;
-bool timer_running_g = false;
-
 void btn_callback(uint gpio, uint32_t events) {
     if (events & GPIO_IRQ_EDGE_FALL) {
         if (gpio == BTN_PIN_R) {
@@ -60,44 +54,57 @@ int main() {
     gpio_set_dir(BTN_PIN_G, GPIO_IN);
     gpio_pull_up(BTN_PIN_G);
 
-    gpio_set_irq_enabled_with_callback(BTN_PIN_R, GPIO_IRQ_EDGE_FALL, true, &btn_callback);
+    gpio_set_irq_enabled_with_callback(
+        BTN_PIN_R,
+        GPIO_IRQ_EDGE_FALL,
+        true,
+        &btn_callback
+    );
     gpio_set_irq_enabled(BTN_PIN_G, GPIO_IRQ_EDGE_FALL, true);
+
+    repeating_timer_t timer_r;
+    repeating_timer_t timer_g;
+
+    bool timerRunningR = false;
+    bool timerRunningG = false;
 
     while (true) {
         if (flag_r) {
             flag_r = false;
-            if (!timer_running_r) {
+
+            if (!timerRunningR) {
                 add_repeating_timer_ms(500, blinking_timer_callback_r, NULL, &timer_r);
-                timer_running_r = true;
+                timerRunningR = true;
             } else {
                 cancel_repeating_timer(&timer_r);
-                timer_running_r = false;
+                timerRunningR = false;
                 gpio_put(LED_PIN_R, 0);
             }
         }
 
         if (flag_g) {
             flag_g = false;
-            if (!timer_running_g) {
+
+            if (!timerRunningG) {
                 add_repeating_timer_ms(250, blinking_timer_callback_g, NULL, &timer_g);
-                timer_running_g = true;
+                timerRunningG = true;
             } else {
                 cancel_repeating_timer(&timer_g);
-                timer_running_g = false;
+                timerRunningG = false;
                 gpio_put(LED_PIN_G, 0);
             }
         }
 
         if (toggle_led_flag_r) {
             toggle_led_flag_r = false;
-            bool current_r = gpio_get(LED_PIN_R);
-            gpio_put(LED_PIN_R, !current_r);
+            bool currentState = gpio_get(LED_PIN_R);
+            gpio_put(LED_PIN_R, !currentState);
         }
 
         if (toggle_led_flag_g) {
             toggle_led_flag_g = false;
-            bool current_g = gpio_get(LED_PIN_G);
-            gpio_put(LED_PIN_G, !current_g);
+            bool currentState = gpio_get(LED_PIN_G);
+            gpio_put(LED_PIN_G, !currentState);
         }
 
         sleep_ms(1);
